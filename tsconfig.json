@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noImplicitAny": true,
+        "target": "ES2017",
+        "typeRoots": [
+            "node_modules/@types",
+            "node_modules/@types/node"
+        ],
+        "lib": [
+            "es2018",
+        ]
+    }
+}
