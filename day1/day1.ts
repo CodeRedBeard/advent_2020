@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 
 function match2(numbers: number[]) {
   for (const a of numbers) {
@@ -28,9 +27,7 @@ function match3(numbers: number[]) {
   return -1;
 }
 
-export function day1() {
-  let data = fs.readFileSync('./day1/data.txt',
-    {encoding: 'utf8'});
+export function run(data: string) {
   let numbers = data.split('\n').map(Number);
   let allSum = numbers.reduce((p,c) => p + c);
   console.log(`Sum: ${allSum}`);

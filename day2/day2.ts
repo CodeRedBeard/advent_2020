@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 
 function count<T>(arr: T[], f: (x:T) => boolean) {
   return arr.reduce((p, c) => p + (f(c)?1:0), 0);
@@ -25,9 +24,7 @@ function check_pass(mode:1|2) {
   };
 }
 
-export function run() {
-  let input = fs.readFileSync('./day2/input.txt',
-    {encoding: 'utf8'});
+export function run(input: string) {
   let lines = input.split('\n').filter(x => x.length > 0);
   let checked_1 = lines.map(check_pass(1));
   let num_good_1 = count(checked_1, x => x);
