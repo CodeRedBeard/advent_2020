@@ -7,12 +7,11 @@ function notEmpty(x: string): boolean {
 }
 
 type Passport = Map<string, string>;
-
 function parsePassports(fileData: string) {
-  function eatOne(lines: string[]) {
+  function eatOne(lines: string[]): Passport {
     let all = new Map<string, string>();
     while (true) {
-      let line = lines.pop();
+      let line = lines.shift();
       if (!line) {
         break;
       }
@@ -20,16 +19,16 @@ function parsePassports(fileData: string) {
       if (line.length === 0) {
         break;
       }
-      let items = line.trim().split(' ').filter(notEmpty);
+      let items = line.split(' ').filter(notEmpty);
       for (const i of items) {
-      	let [k,v] = i.split(':');
-      	all.set(k, v);
+        let [k,v] = i.split(':');
+        all.set(k, v);
       }
     }
     return all;
   }
 
-  let fileLines = fileData.split('\n').filter(notEmpty);
+  let fileLines = fileData.split('\n');
   let passes = [];
   while (true) {
   	let passport = eatOne(fileLines);
