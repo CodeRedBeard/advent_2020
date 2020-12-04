@@ -1,10 +1,4 @@
-function count<T>(arr: T[], f: (x:T) => boolean) {
-  return arr.reduce((p, c) => p + (f(c)?1:0), 0);
-}
-
-function notEmpty(x: string): boolean {
-  return (x.length > 0);
-}
+import { count, notEmpty } from "../util";
 
 type Passport = Map<string, string>;
 function parsePassports(fileData: string) {

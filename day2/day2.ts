@@ -1,7 +1,4 @@
-
-function count<T>(arr: T[], f: (x:T) => boolean) {
-  return arr.reduce((p, c) => p + (f(c)?1:0), 0);
-}
+import { count, notEmpty } from "../util";
 
 function check_pass(mode:1|2) {
   return (line: string): boolean => {
@@ -25,7 +22,7 @@ function check_pass(mode:1|2) {
 }
 
 export function run(input: string) {
-  let lines = input.split('\n').filter(x => x.length > 0);
+  let lines = input.split('\n').filter(notEmpty);
   let checked_1 = lines.map(check_pass(1));
   let num_good_1 = count(checked_1, x => x);
   console.log(`Good 1: ${num_good_1}`);
