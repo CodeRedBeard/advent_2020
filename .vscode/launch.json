@@ -19,7 +19,6 @@
                 "-r", "ts-node/register",
             ],
             "args": [
-                "4",
             ],
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
