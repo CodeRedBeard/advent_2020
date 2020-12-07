@@ -1,18 +1,32 @@
 import { test, TestCase } from "../test";
-import { notEmpty } from "../util";
+import { notEmpty, sum } from "../util";
 
+const testRules1 = [
+  'light red bags contain 1 bright white bag, 2 muted yellow bags.',
+  'dark orange bags contain 3 bright white bags, 4 muted yellow bags.',
+  'bright white bags contain 1 shiny gold bag.',
+  'muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.',
+  'shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.',
+  'dark olive bags contain 3 faded blue bags, 4 dotted black bags.',
+  'vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.',
+  'faded blue bags contain no other bags.',
+  'dotted black bags contain no other bags.',
+];
+const testRules2 = [
+  'shiny gold bags contain 2 dark red bags.',
+  'dark red bags contain 2 dark orange bags.',
+  'dark orange bags contain 2 dark yellow bags.',
+  'dark yellow bags contain 2 dark green bags.',
+  'dark green bags contain 2 dark blue bags.',
+  'dark blue bags contain 2 dark violet bags.',
+  'dark violet bags contain no other bags.',
+];
 const testCases1: Array<TestCase<string[], number>> = [
-  [[
-    'light red bags contain 1 bright white bag, 2 muted yellow bags.',
-    'dark orange bags contain 3 bright white bags, 4 muted yellow bags.',
-    'bright white bags contain 1 shiny gold bag.',
-    'muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.',
-    'shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.',
-    'dark olive bags contain 3 faded blue bags, 4 dotted black bags.',
-    'vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.',
-    'faded blue bags contain no other bags.',
-    'dotted black bags contain no other bags.',
-  ], 4],
+  [testRules1, 4],
+];
+const testCases2: Array<TestCase<string[], number>> = [
+  [testRules1, 32],
+  [testRules2, 126],
 ];
 
 type BagContent = [number,string];
@@ -79,6 +93,17 @@ function findOuters(search: string, outers: BagOuters): string[] {
   return allowed;
 }
 
+function countContained(search: string, rules: BagRules): number {
+  let contained = rules.get(search);
+  if (contained) {
+    return contained.map(bags => {
+      let [num,color] = bags;
+      return num * (1 + countContained(color, rules));
+    }).reduce(sum, 0);
+  }
+  return 0;
+}
+
 function solvePart1(lines: string[]): number {
   let rules = readRules(lines);
   let outers = invertRules(rules);
@@ -87,10 +112,20 @@ function solvePart1(lines: string[]): number {
   return outersOfShinyGold.length;
 }
 
+function solvePart2(lines: string[]): number {
+  let rules = readRules(lines);
+  let containedByShinyGold = countContained('shiny_gold', rules);
+  return containedByShinyGold;
+}
+
 export function run(fileData: string) {
   test(solvePart1, testCases1);
+  test(solvePart2, testCases2);
   let lines = fileData.split('\n').filter(notEmpty);
 
   const result_1 = solvePart1(lines);
   console.log(`Part1 (Shiny-gold allowed): ${result_1}`);
+
+  const result_2 = solvePart2(lines);
+  console.log(`Part2 (Shiny-gold contains): ${result_2}`);
 }

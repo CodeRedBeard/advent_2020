@@ -5,3 +5,7 @@ export function notEmpty(x: string): boolean {
 export function count<T>(arr: T[], f: (x: T) => boolean) {
     return arr.reduce((p, c) => p + (f(c) ? 1 : 0), 0);
 }
+
+export function sum(a: number, b: number): number {
+    return a + b;
+}
