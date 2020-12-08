@@ -14,6 +14,9 @@ const testCases1: TestCase<string[], number>[] = [
     'acc +6',
   ], 5],
 ];
+const testCases2: TestCase<string[], number>[] = [
+  [testCases1[0][0], 8],
+];
 
 const validOps = tuple(
   'acc',
@@ -42,8 +45,8 @@ function readCode(lines: string[]): Instruction[] {
   return lines.map(lineToInstr);
 }
 
-function runLoopingCode(lines: string[]): number | undefined {
-  const code = readCode(lines);
+type AccumResult = {exit: 'loop' | 'nex' | 'valid', accum: number};
+function runLoopingCode(code: Instruction[]): AccumResult {
   const program: Program = {
     code: code.map(i => [i,0]),
     ip: 0,
@@ -53,7 +56,10 @@ function runLoopingCode(lines: string[]): number | undefined {
     const codeLine = program.code[program.ip];
     codeLine[1] += 1; // hit count
     if (codeLine[1] > 1) {
-      return program.accum;
+      return {
+        exit: 'loop',
+        accum: program.accum,
+      };
     }
     const [instr] = codeLine;
     switch (instr.op) {
@@ -72,17 +78,60 @@ function runLoopingCode(lines: string[]): number | undefined {
       }
     }
   }
+  if (program.ip !== program.code.length) {
+    return {
+      exit: 'nex',
+      accum: program.accum,
+    };
+  }
+  return {
+    exit: 'valid',
+    accum: program.accum,
+  };
+}
+
+function mutateCode(index: number, inCode: Instruction[]): Instruction[] {
+  const outCode = inCode.map(x => Object.assign({}, x));
+  const instr = outCode[index];
+  if (instr.op === 'nop') {
+    instr.op = 'jmp';
+  }
+  else if (instr.op === 'jmp') {
+    instr.op = 'nop';
+  }
+  return outCode;
+}
+
+function solvePart1(lines: string[]): number {
+  const code = readCode(lines);
+  const result = runLoopingCode(code);
+  if (result.exit !== 'loop') {
+    throw new Error();
+  }
+  return result.accum;
+}
+
+function solvePart2(lines: string[]): number | undefined {
+  const initCode = readCode(lines);
+  for (let x = 0; x < initCode.length; ++x) {
+    const code = mutateCode(x, initCode);
+    const result = runLoopingCode(code);
+    if (result.exit === 'valid') {
+      return result.accum;
+    }
+  }
   return undefined;
 }
 
-function solvePart1(lines: string[]) {
-  const breakPointAccum = runLoopingCode(lines);
-  console.log(`Part1 (looping accumulator): ${breakPointAccum}`);
-}
-
 export function run(fileData: string) {
-  test(runLoopingCode, testCases1);
+  test(solvePart1, testCases1);
+  test(solvePart2, testCases2);
 
   const lines = fileData.split('\n');
-  solvePart1(lines);
+
+  const breakPointAccum = solvePart1(lines);
+  console.log(`Part1 (looping accumulator): ${breakPointAccum}`);
+
+  const fixedAccum = solvePart2(lines);
+  console.log(`Part2 (uncorrupted): ${fixedAccum}`);
 }
