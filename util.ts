@@ -9,3 +9,6 @@ export function count<T>(arr: T[], f: (x: T) => boolean) {
 export function sum(a: number, b: number): number {
     return a + b;
 }
+
+type Narrowable = string | number | boolean | symbol | object | {} | void | null | undefined;
+export const tuple = <T extends Narrowable[]>(...args: T) => args;
