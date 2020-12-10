@@ -1,4 +1,16 @@
+import { test, TestCase } from '../test';
 import { notEmpty } from '../util';
+
+const testCases2: TestCase<number[], number>[] = [
+  [
+    [16, 10, 15, 5, 1, 11, 7, 19, 6, 12, 4,
+    ], 8],
+  [
+    [28, 33, 18, 42, 31, 14, 46, 20, 48, 47, 24,
+      23, 49, 45, 19, 38, 39, 11, 1, 32, 25, 35,
+      8, 17, 7, 9, 4, 2, 34, 10, 3,
+    ], 19208],
+];
 
 function sortLines(lines: number[]) {
   lines = lines.slice();
@@ -31,17 +43,25 @@ function solvePart1(lines: number[]) {
 
 function solvePart2(lines: number[]) {
   lines = sortLines(lines);
-  let numPaths = new Array<number>();
-  let prev3 = [0];
-  for (const [idx, x] of lines.entries()) {
-    prev3 = prev3.filter(p => (x - p) <= 3);
-    numPaths.push(prev3.length);
-    prev3.push(x);
+  lines.unshift(0);
+  let numPaths = [1];
+  for (let idx = 1; idx < lines.length; ++idx) {
+    const x = lines[idx];
+    let sum = 0;
+    for (let n = Math.max(0, idx - 3); n < idx; ++n) {
+      if (x - lines[n] > 3) {
+        continue;
+      }
+      sum += numPaths[n];
+    }
+    numPaths.push(sum);
   }
-  return numPaths.reduce((a,b) => a * b);
+  return numPaths[numPaths.length - 1];
 }
 
 export function run(fileData: string) {
+  test(solvePart2, testCases2);
+
   let lines = fileData.split('\n')
     .filter(notEmpty)
     .map(Number);
