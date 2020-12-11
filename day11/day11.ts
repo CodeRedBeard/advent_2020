@@ -1,4 +1,20 @@
 import { notEmpty, count } from '../util';
+import { TestCase, test } from '../test';
+
+const testCases1 : TestCase<string[],number>[]= [
+  [[
+    'L.LL.LL.LL',
+    'LLLLLLL.LL',
+    'L.L.L..L..',
+    'LLLL.LL.LL',
+    'L.LL.LL.LL',
+    'L.LLLLL.LL',
+    '..L.L.....',
+    'LLLLLLLLLL',
+    'L.LLLLLL.L',
+    'L.LLLLL.LL',
+  ], 37],
+];
 
 enum Cell {
   Floor,
@@ -50,7 +66,7 @@ class Grid {
 
   public numTaken(): number {
     return this.cells.reduce(
-      (sum,line) => count(line,
+      (sum,line) => sum + count(line,
         c => c === Cell.Taken),
       0);
   }
@@ -93,6 +109,8 @@ function solvePart1(lines: string[]) {
     line => line.split('').map(makeCell));
   while (true) {
     let [newGrid,changed] = runRules(grid);
+    console.log(`Taken: ${newGrid.numTaken()}`);
+    console.log(`Changed: ${changed}`);
     if (changed === 0) {
       return newGrid.numTaken();
     }
@@ -101,6 +119,7 @@ function solvePart1(lines: string[]) {
 }
 
 export function run(fileData: string) {
+  test(solvePart1, testCases1);
   let lines = fileData.split('\n').filter(notEmpty);
 
   let result_1 = solvePart1(lines);
