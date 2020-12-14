@@ -1,19 +1,21 @@
 import { FTestCase, test, testFuncs } from "../test";
-import { notEmpty } from "../util";
+import { notEmpty, sum } from "../util";
 
 enum MaskBit {
   Ignore,
   Zero,
   One,
 }
+type Bitmask = MaskBit[];
+type Binary = boolean[];
 
 const bitValues: number[] = [];
 for (let x = 0; x < 36; ++x) {
   bitValues.push(Math.pow(2, x));
 }
 
-function toBinary(num: number): boolean[] {
-  let result: boolean[] = [];
+function toBinary(num: number): Binary {
+  let result: Binary = [];
   for (let x = 35; x >= 0; --x) {
     if (num >= bitValues[x]) {
       result.push(true);
@@ -26,7 +28,7 @@ function toBinary(num: number): boolean[] {
   return result.reverse();
 }
 
-function fromBinary(bin: boolean[]): number {
+function fromBinary(bin: Binary): number {
   let result = 0;
   for (let x = 0; x < 36; ++x) {
     if (bin[x]) {
@@ -36,8 +38,18 @@ function fromBinary(bin: boolean[]): number {
   return result;
 }
 
-function readBitmask(line: string): MaskBit[] {
-  let result: MaskBit[] = [];
+function applyMask(bin: Binary, mask: Bitmask) {
+  for (let x =0; x<bin.length; ++x) {
+    switch (mask[x]) {
+      default: break;
+      case MaskBit.Zero: bin[x] = false; break;
+      case MaskBit.One:  bin[x] = true;  break;
+    }
+  }
+}
+
+function readBitmask(line: string): Bitmask {
+  let result: Bitmask = [];
   let maskStr = line.substring(7);
   for (const c of maskStr) {
     switch (c) {
@@ -50,20 +62,37 @@ function readBitmask(line: string): MaskBit[] {
   return result.reverse();
 }
 
-const memRegex = new RegExp('^mem\[(\d+)\] = (\d+)$');
-function execLine(line: string) {
+interface State {
+  memory: Map<number, number>;
+  mask: Bitmask;
+}
+const memRegex = new RegExp('^mem\\[(\\d+)\\] = (\\d+)$');
+function execLine(line: string, state: State) {
   if (line.startsWith('mem')) {
     let memDetail = memRegex.exec(line);
-    let addr = memDetail[0];
-    let value = memDetail[1];
+    let addr = Number(memDetail[1]);
+    let value = Number(memDetail[2]);
+    let binValue = toBinary(value);
+    applyMask(binValue, state.mask);
+    let maskedValue = fromBinary(binValue);
+    state.memory.set(addr, maskedValue);
   }
   else if (line.startsWith('mask')) {
-    let mask = readBitmask(line);
+    state.mask = readBitmask(line);
   }
 }
 
 function solvePart1(lines: string[]): number {
-  return 0;
+  let state: State ={
+    memory: new Map(),
+    mask: [],
+  };
+  for (let line of lines) {
+    execLine(line, state);
+  }
+  //console.log(Array.from(state.memory.entries()));
+  return Array.from(state.memory.values())
+    .reduce(sum, 0);
 }
 
 function binaryRoundtrip(num: number): number {
@@ -90,5 +119,8 @@ const testCases: FTestCase<string[], number>[] = [
 export function run(fileData: string) {
   testFuncs(testBinary);
   testFuncs(testCases);
+  
   let lines = fileData.split('\n').filter(notEmpty);
+
+  console.log(`Part1: ${solvePart1(lines)}`);
 }
