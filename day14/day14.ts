@@ -48,6 +48,34 @@ function applyMask(bin: Binary, mask: Bitmask) {
   }
 }
 
+function permuteMask(mask: Bitmask): Bitmask[] {
+  let floatingIdx: number[] = [];
+  for (const [idx, val] of mask.entries()) {
+    if (val === MaskBit.Ignore) {
+      floatingIdx.push(idx);
+    }
+  }
+  const numPermutations = Math.pow(2, floatingIdx.length);
+  let results: Bitmask[] = [];
+  for (let x = 0; x < numPermutations; ++x) {
+    let xBin = toBinary(x);
+    let permutation: Bitmask = [];
+    for (const val of mask) {
+      if (val === MaskBit.Zero) {
+        permutation.push(MaskBit.Ignore);
+      }
+      else if (val === MaskBit.One) {
+        permutation.push(MaskBit.One);
+      }
+      else if (val === MaskBit.Ignore) {
+        permutation.push(xBin.shift() ? MaskBit.One : MaskBit.Zero);
+      }
+    }
+    results.push(permutation);
+  }
+  return results;
+}
+
 function readBitmask(line: string): Bitmask {
   let result: Bitmask = [];
   let maskStr = line.substring(7);
@@ -67,7 +95,7 @@ interface State {
   mask: Bitmask;
 }
 const memRegex = new RegExp('^mem\\[(\\d+)\\] = (\\d+)$');
-function execLine(line: string, state: State) {
+function execLine1(line: string, state: State) {
   if (line.startsWith('mem')) {
     let memDetail = memRegex.exec(line);
     let addr = Number(memDetail[1]);
@@ -88,7 +116,38 @@ function solvePart1(lines: string[]): number {
     mask: [],
   };
   for (let line of lines) {
-    execLine(line, state);
+    execLine1(line, state);
+  }
+  //console.log(Array.from(state.memory.entries()));
+  return Array.from(state.memory.values())
+    .reduce(sum, 0);
+}
+
+function execLine2(line: string, state: State) {
+  if (line.startsWith('mem')) {
+    let memDetail = memRegex.exec(line);
+    let addr = Number(memDetail[1]);
+    let value = Number(memDetail[2]);
+    let binAddr = toBinary(addr);
+    const masks = permuteMask(state.mask);
+    for (const mask of masks) {
+      applyMask(binAddr, mask);
+      let maskedAddr = fromBinary(binAddr);
+      state.memory.set(maskedAddr, value);
+    }
+  }
+  else if (line.startsWith('mask')) {
+    state.mask = readBitmask(line);
+  }
+}
+
+function solvePart2(lines: string[]): number {
+  let state: State ={
+    memory: new Map(),
+    mask: [],
+  };
+  for (let line of lines) {
+    execLine2(line, state);
   }
   //console.log(Array.from(state.memory.entries()));
   return Array.from(state.memory.values())
@@ -114,6 +173,14 @@ const testCases: FTestCase<string[], number>[] = [
     ],
     165,
   ],
+  [ solvePart2,
+    [ 'mask = 000000000000000000000000000000X1001X',
+      'mem[42] = 100',
+      'mask = 00000000000000000000000000000000X0XX',
+      'mem[26] = 1',
+    ],
+    208,
+  ],
 ];
 
 export function run(fileData: string) {
@@ -123,4 +190,5 @@ export function run(fileData: string) {
   let lines = fileData.split('\n').filter(notEmpty);
 
   console.log(`Part1: ${solvePart1(lines)}`);
+  console.log(`Part2: ${solvePart2(lines)}`);
 }
