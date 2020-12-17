@@ -52,24 +52,71 @@ function stateExtents(s: State) {
   return ext;
 }
 
+function evalCell(c: Vec3, s: State): number {
+  let neighborCount = 0;
+  for (let z = c.z - 1; z <= c.z + 1; ++z) {
+    for (let y = c.y - 1; y <= c.y + 1; ++y) {
+      for (let x = c.x - 1; x <= c.x + 1; ++x) {
+        if (x === c.x && y === c.y && z === c.z) {
+          continue;
+        }
+        const newCell = {x:x, y:y, z:z};
+        const key = posStr(newCell);
+        if (s.has(key)) {
+          ++neighborCount;
+        }
+      }
+    }
+  }
+  return neighborCount;
+}
+
 function nextState(prev: State): State {
   let newState: State = new Map();
   let ext = stateExtents(prev);
   for (let z = ext.min.z - 1; z <= ext.max.z + 1; ++z) {
     for (let y = ext.min.y - 1; y <= ext.max.y + 1; ++y) {
       for (let x = ext.min.x - 1; x <= ext.max.x + 1; ++x) {
-        let newCell = {x:x, y:y, z:z};
-        let str = posStr(newCell);
-        //let active = evalCell(newCell, )
+        const newCell = {x:x, y:y, z:z};
+        const key = posStr(newCell);
+        const prevActive = prev.has(key);
+        const neighbors = evalCell(newCell, prev);
+        if (prevActive && (neighbors === 2 || neighbors === 3)) {
+          newState.set(key, newCell);
+        }
+        else if (!prevActive && neighbors === 3) {
+          newState.set(key, newCell);
+        }
       }
     }
   }
   return newState;
 }
 
+function printState(s: State) {
+  let ext = stateExtents(s);
+  for (let z = ext.min.z; z <= ext.max.z; ++z) {
+    console.log(`\nz=${z}, y=${ext.min.y}, x=${ext.min.x}`);
+    for (let y = ext.min.y; y <= ext.max.y; ++y) {
+      let lineStr = '';
+      for (let x = ext.min.x; x <= ext.max.x; ++x) {
+        const newCell = {x:x, y:y, z:z};
+        const key = posStr(newCell);
+        lineStr += s.has(key) ? '#' : '.';
+      }
+      console.log(lineStr);
+    }
+  }
+}
+
 function solvePart1(lines: string[]) {
   let state = initState(lines);
-  return 0;
+  for (let it = 0; it < 6; ++it) {
+    state = nextState(state);
+    //console.log(`it=${it}, num=${state.size}`);
+    //printState(state);
+  }
+  return state.size;
 }
 
 const testCases: FTestCase<string[],number>[] = [
@@ -84,4 +131,7 @@ const testCases: FTestCase<string[],number>[] = [
 
 export function run(fileData: string) {
   testFuncs(testCases);
+
+  let lines = fileData.split('\n');
+  console.log(`Part1: ${solvePart1(lines)}`);
 }
