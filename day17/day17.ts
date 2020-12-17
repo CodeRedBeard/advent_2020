@@ -1,98 +1,118 @@
 import { FTestCase, testFuncs } from '../test';
 
-interface Vec3 {
-  x: number;
-  y: number;
-  z: number;
+type Vector = number[];
+interface State {
+  dimensions: number;
+  cells: Map<string, Vector>;
 }
 
-interface Cell extends Vec3 {
-  active: boolean;
-}
-type State = Map<string, Vec3>;
-
-function posStr(v: Vec3) {
-  return `${v.x}_${v.y}_${v.z}`;
+function posStr(v: Vector) {
+  return v.join('_');
 }
 
-function initState(lines: string[]) {
-  let s: State = new Map();
+function initState(dimensions: number, lines: string[]) {
+  let s: State = {
+    dimensions: dimensions,
+    cells: new Map(),
+  };
   for (let [y, line] of lines.entries()) {
     for (let [x, ch] of line.split('').entries()) {
       if (ch !== '#') {
         continue;
       }
-      let cell = { x:x, y:y, z:0 };
+      let cell = new Array<number>(dimensions).fill(0);
+      cell[0] = x;
+      cell[1] = y;
       let str = posStr(cell);
-      s.set(str, cell);
+      s.cells.set(str, cell);
     }
   }
   return s;
 }
 
+interface Extents {
+  min: Vector,
+  max: Vector,
+};
 function stateExtents(s: State) {
-  let ext: null | {
-    min: Vec3,
-    max: Vec3,
-  } = null;
-  for (let c of s.values()) {
+  let ext: Extents | null = null;
+  for (let c of s.cells.values()) {
     if (!ext) {
       ext = {
-        min: {x:c.x, y:c.y, z:c.z},
-        max: {x:c.x, y:c.y, z:c.z},
+        min: c.slice(),
+        max: c.slice(),
       };
     }
-    ext.min.x = Math.min(ext.min.x, c.x);
-    ext.min.y = Math.min(ext.min.y, c.y);
-    ext.min.z = Math.min(ext.min.z, c.z);
-    ext.max.x = Math.max(ext.max.x, c.x);
-    ext.max.y = Math.max(ext.max.y, c.y);
-    ext.max.z = Math.max(ext.max.z, c.z);
+    for (let d = 0; d < s.dimensions; ++d) {
+      ext.min[d] = Math.min(ext.min[d], c[d]);
+      ext.max[d] = Math.max(ext.max[d], c[d]);
+    }
   }
   return ext;
 }
 
-function evalCell(c: Vec3, s: State): number {
-  let neighborCount = 0;
-  for (let z = c.z - 1; z <= c.z + 1; ++z) {
-    for (let y = c.y - 1; y <= c.y + 1; ++y) {
-      for (let x = c.x - 1; x <= c.x + 1; ++x) {
-        if (x === c.x && y === c.y && z === c.z) {
-          continue;
-        }
-        const newCell = {x:x, y:y, z:z};
-        const key = posStr(newCell);
-        if (s.has(key)) {
-          ++neighborCount;
-        }
+function expandExtents(ext: Extents): Extents {
+  return {
+    min: ext.min.map(k => k - 1),
+    max: ext.max.map(k => k + 1),
+  };
+}
+
+function evalExtents(s: State, ext: Extents, f: (pos: Vector) => void) {
+  let evalCount = 0;
+  function evalDimension(d: number, pos: Vector) {
+    if (d === s.dimensions) {
+      ++evalCount;
+      f(pos);
+    }
+    else {
+      for (let k = ext.min[d]; k <= ext.max[d]; ++k) {
+        pos[d] = k;
+        evalDimension(d + 1, pos);
       }
     }
   }
+  let cellPos = ext.min.slice();
+  evalDimension(0, cellPos);
+}
+
+function evalCell(c: Vector, s: State): number {
+  let neighborCount = 0;
+  let ext = expandExtents({min: c, max: c});
+  evalExtents(s, ext, (pos) => {
+    if (pos.every((v,i) => v === c[i])) {
+      return;
+    }
+    const key = posStr(pos);
+    if (s.cells.has(key)) {
+      ++neighborCount;
+    }
+  });
   return neighborCount;
 }
 
 function nextState(prev: State): State {
-  let newState: State = new Map();
-  let ext = stateExtents(prev);
-  for (let z = ext.min.z - 1; z <= ext.max.z + 1; ++z) {
-    for (let y = ext.min.y - 1; y <= ext.max.y + 1; ++y) {
-      for (let x = ext.min.x - 1; x <= ext.max.x + 1; ++x) {
-        const newCell = {x:x, y:y, z:z};
-        const key = posStr(newCell);
-        const prevActive = prev.has(key);
-        const neighbors = evalCell(newCell, prev);
-        if (prevActive && (neighbors === 2 || neighbors === 3)) {
-          newState.set(key, newCell);
-        }
-        else if (!prevActive && neighbors === 3) {
-          newState.set(key, newCell);
-        }
-      }
+  let newState: State = {
+    dimensions: prev.dimensions,
+    cells: new Map(),
+  };
+  let ext = expandExtents(stateExtents(prev));
+  evalExtents(prev, ext, (pos) => {
+    let newCell = pos.slice();
+    const key = posStr(newCell);
+    const prevActive = prev.cells.has(key);
+    const neighbors = evalCell(newCell, prev);
+    if (prevActive && (neighbors === 2 || neighbors === 3)) {
+      newState.cells.set(key, newCell);
     }
-  }
+    else if (!prevActive && neighbors === 3) {
+      newState.cells.set(key, newCell);
+    }
+  });
   return newState;
 }
 
+/*
 function printState(s: State) {
   let ext = stateExtents(s);
   for (let z = ext.min.z; z <= ext.max.z; ++z) {
@@ -108,15 +128,26 @@ function printState(s: State) {
     }
   }
 }
+*/
 
 function solvePart1(lines: string[]) {
-  let state = initState(lines);
+  let state = initState(3, lines);
   for (let it = 0; it < 6; ++it) {
     state = nextState(state);
     //console.log(`it=${it}, num=${state.size}`);
     //printState(state);
   }
-  return state.size;
+  return state.cells.size;
+}
+
+function solvePart2(lines: string[]) {
+  let state = initState(4, lines);
+  for (let it = 0; it < 6; ++it) {
+    state = nextState(state);
+    //console.log(`it=${it}, num=${state.size}`);
+    //printState(state);
+  }
+  return state.cells.size;
 }
 
 const testCases: FTestCase<string[],number>[] = [
@@ -126,7 +157,14 @@ const testCases: FTestCase<string[],number>[] = [
       '..#',
       '###',
     ],
-    112]
+    112],
+  [ solvePart2,
+    [
+      '.#.',
+      '..#',
+      '###',
+    ],
+    848],
 ];
 
 export function run(fileData: string) {
@@ -134,4 +172,5 @@ export function run(fileData: string) {
 
   let lines = fileData.split('\n');
   console.log(`Part1: ${solvePart1(lines)}`);
+  console.log(`Part2: ${solvePart2(lines)}`);
 }
