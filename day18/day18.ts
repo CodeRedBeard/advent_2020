@@ -1,13 +1,7 @@
-import { sum } from '../util';
+import { sum, notEmpty } from '../util';
 import { testFuncs, FTestCase } from '../test';
 
 type Operator = '+' | '*' | '(';
-interface Expr {
-  lhs: number;
-  op: '+' | '*';
-  //rhs: Expr | number;
-}
-type ExprVal = Expr | number;
 
 function evalExpr(str: string): number {
   let rpn: (number | Operator)[] = [];
@@ -19,8 +13,14 @@ function evalExpr(str: string): number {
         break;
       case ' ': break;
       case '(':
+        opStack.push(c);
+        break;
       case '+':
       case '*':
+        while (opStack.length > 0
+          && opStack[opStack.length-1] !== '(') {
+          rpn.push(opStack.pop());
+        }
         opStack.push(c);
         break;
       case ')':
@@ -77,5 +77,6 @@ const testCases: FTestCase<string,number>[] = [
 export function run(fileData: string) {
   testFuncs(testCases);
 
-  let lines = fileData.split('\n');
+  let lines = fileData.split('\n').filter(notEmpty);
+  console.log(`Part1: ${solvePart1(lines)}`);
 }
