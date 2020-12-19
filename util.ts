@@ -1,3 +1,13 @@
+import * as fs from 'fs';
+
+export function readInputFile(name: string) {
+  let file_data = fs.readFileSync(
+    name,
+    { encoding: 'utf8' })
+    .replace(/\r/g, '');
+  return file_data;
+}
+
 export function notEmpty(x: string): boolean {
     return (x.length > 0) && (x !== '\r');
 }
