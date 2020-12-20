@@ -28,5 +28,20 @@ export function sum(a: number, b: number): number {
     return a + b;
 }
 
+export function mul(a: number, b: number): number {
+    return a * b;
+}
+
+export function first<T>(x: Iterable<T>) {
+  for (let k of x) {
+    return k;
+  }
+}
+
+export function last<T>(x: Iterable<T>) {
+  let arr = Array.from(x);
+  return arr[arr.length - 1];
+}
+
 type Narrowable = string | number | boolean | symbol | object | {} | void | null | undefined;
 export const tuple = <T extends Narrowable[]>(...args: T) => args;

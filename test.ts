@@ -16,7 +16,7 @@ export function testFuncs<T, Y, F extends (t: T) => Y>(cases: FTestCase<T,Y,F>[]
     let v = f(vIn);
     if (vOut !== v) {
       throw new Error(
-        `case [${idx}]: ${vOut} != ${v} = f(${vIn})`);
+        `case [${idx}]: ${vOut} != ${v} = f(${String(vIn).substring(0,100)})`);
     }
   }
 }
