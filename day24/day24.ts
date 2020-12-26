@@ -1,18 +1,17 @@
 import { FTestCase, testFuncs } from '../test';
-import { readInputFile } from '../util';
+import { readInputFile, count } from '../util';
 
 enum Dir {
   e, se, sw, w, nw, ne,
 }
-
 interface Pos {
   q: number;
   r: number;
 }
-
+type FloorTiles = Map<string,Pos>;
 interface State {
   pos: Pos;
-  flipped: Map<string,Pos>;
+  flipped: FloorTiles;
 }
 
 function posStr(pos: Pos) {
@@ -97,20 +96,77 @@ function flipTile(state: State) {
   } 
 }
 
-function solvePart1(input: string): number {
+function getInitialState(input: string): FloorTiles {
   let dirs = readLines(input);
   let state: State = {
-    pos: { q:0, r:0},
+    pos: { q:0, r:0 },
     flipped: new Map(),
   };
   for (let line of dirs) {
     //console.log(line);
-    state.pos = { q:0, r:0};
+    state.pos = { q:0, r:0 };
     walkTiles(line, state);
     flipTile(state);
   }
-  //console.log(state.flipped.keys());
-  return state.flipped.size;
+  return state.flipped;
+}
+
+function nearbyPos(pos: Pos): Pos[] {
+  return [
+    {q:pos.q+1, r:pos.r+0},
+    {q:pos.q-1, r:pos.r+0},
+    {q:pos.q+1, r:pos.r+1},
+    {q:pos.q+0, r:pos.r-1},
+    {q:pos.q-1, r:pos.r-1},
+    {q:pos.q+0, r:pos.r+1},
+  ];
+}
+
+function countNearby(pos: Pos, state: FloorTiles) {
+  let near = nearbyPos(pos);
+  return count(near, (x) => state.has(posStr(x)));
+}
+
+function runUpdates(days: number, state: FloorTiles) {
+  let oldState = state;
+  let newState: FloorTiles;
+  for (let n = 0; n < days; ++n) {
+    newState = new Map();
+    let evalPos: FloorTiles = new Map(oldState.entries())
+    for (let pos of oldState.values()) {
+      for (let near of nearbyPos(pos)) {
+        evalPos.set(posStr(near), near);
+      }
+    }
+    for (let p of evalPos.values()) {
+      let curSet = oldState.has(posStr(p));
+      let adjSet = countNearby(p, oldState);
+      if (curSet) {
+        if (adjSet >= 1 && adjSet <= 2) {
+          newState.set(posStr(p), p);
+        }
+      }
+      else {
+        if (adjSet === 2) {
+          newState.set(posStr(p), p);
+        }
+      }
+    }
+    oldState = newState;
+  }
+  return newState;
+}
+
+function solvePart1(input: string): number {
+  let flipped = getInitialState(input);
+  //console.log(flipped.keys());
+  return flipped.size;
+}
+
+function solvePart2(input: string): number {
+  let tiles = getInitialState(input);
+  tiles = runUpdates(100, tiles);
+  return tiles.size;
 }
 
 const testCases: FTestCase<string,number>[] = [
@@ -118,10 +174,14 @@ const testCases: FTestCase<string,number>[] = [
   [ solvePart1,
     readInputFile('day24/test1.txt'),
     10],
+  [ solvePart2,
+    readInputFile('day24/test1.txt'),
+    2208],
 ];
 
 export function run(fileData: string) {
   testFuncs(testCases);
 
   console.log(`Part1: ${solvePart1(fileData)}`);
+  console.log(`Part2: ${solvePart2(fileData)}`);
 }
